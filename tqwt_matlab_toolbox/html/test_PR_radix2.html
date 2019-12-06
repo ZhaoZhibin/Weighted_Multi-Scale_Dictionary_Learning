@@ -1,0 +1,215 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Radix-2 Tunable Q-factor Wavelet Transform: Verify PR</title>
+      <meta name="generator" content="MATLAB 7.8">
+      <meta name="date" content="2011-04-05">
+      <meta name="m-file" content="test_PR_radix2"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Radix-2 Tunable Q-factor Wavelet Transform: Verify PR</h1>
+         <p>Verify perfect reconstruction (PR) property of radix-2 TQWT</p><pre class="codeinput"><span class="comment">% Reference: 'Wavelet Transform with Tunable Q-Factor'</span>
+<span class="comment">% http://taco.poly.edu/selesi/TQWT/</span>
+<span class="comment">% Ivan Selesnick,  selesi@poly.edu</span>
+<span class="comment">% Polytechnic Institute of NYU</span>
+<span class="comment">% November 2010</span>
+
+clear
+
+<span class="keyword">for</span> k = 1:2
+
+    <span class="keyword">if</span> k == 1
+        Q = 4; r = 3; J = 10;   <span class="comment">% High Q-factor wavelet transform</span>
+    <span class="keyword">elseif</span> k == 2
+        Q = 1; r = 3; J = 5;    <span class="comment">% Low Q-factor wavelet transform</span>
+    <span class="keyword">end</span>
+
+    fprintf(<span class="string">'\n'</span>)
+    fprintf(<span class="string">'Q = %3.2f, r = %3.2f\n'</span>,Q,r)
+
+    beta = 2/(Q+1);
+    alpha = 1-beta/r;
+    I = sqrt(-1);
+
+    <span class="comment">% Verify PR</span>
+    <span class="keyword">for</span> N = 2.^(7:10)                   <span class="comment">% Verify PR for various lengths</span>
+        x = rand(1,N) + I*rand(1,N);    <span class="comment">% Make test signal (complex-valued)</span>
+        J = floor(log2(beta*N/8)/log2(1/alpha));    <span class="comment">% number of levels</span>
+        w = tqwt_radix2(x,Q,r,J);       <span class="comment">% TQWT</span>
+        y = itqwt_radix2(w,Q,r,N);      <span class="comment">% Inverse TQWT</span>
+        recon_err = max(abs(x - y));    <span class="comment">% Reconstruction error</span>
+
+        fprintf(<span class="string">'N = %4d, J = %3d: tqwt/itqwt (radix2) recon error = %e\n'</span>,N,J,recon_err)
+    <span class="keyword">end</span>
+
+    <span class="keyword">for</span> N = 600:2:620                   <span class="comment">% Verify PR for various lengths</span>
+        x = rand(1,N) + I*rand(1,N);    <span class="comment">% Make test signal (complex-valued)</span>
+        J = floor(log2(beta*N/8)/log2(1/alpha));    <span class="comment">% number of levels</span>
+        w = tqwt_radix2(x,Q,r,J);       <span class="comment">% TQWT</span>
+        y = itqwt_radix2(w,Q,r,N);      <span class="comment">% Inverse TQWT</span>
+        recon_err = max(abs(x - y));    <span class="comment">% Reconstruction error</span>
+
+        fprintf(<span class="string">'N = %4d, J = %3d: tqwt/itqwt (radix2) recon error = %e\n'</span>,N,J,recon_err)
+    <span class="keyword">end</span>
+
+
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">
+Q = 4.00, r = 3.00
+N =  128, J =  12: tqwt/itqwt (radix2) recon error = 4.440892e-16
+N =  256, J =  17: tqwt/itqwt (radix2) recon error = 5.028664e-16
+N =  512, J =  22: tqwt/itqwt (radix2) recon error = 7.021667e-16
+N = 1024, J =  27: tqwt/itqwt (radix2) recon error = 7.468262e-16
+N =  600, J =  23: tqwt/itqwt (radix2) recon error = 6.753223e-16
+N =  602, J =  23: tqwt/itqwt (radix2) recon error = 5.661049e-16
+N =  604, J =  23: tqwt/itqwt (radix2) recon error = 6.753223e-16
+N =  606, J =  23: tqwt/itqwt (radix2) recon error = 5.836926e-16
+N =  608, J =  23: tqwt/itqwt (radix2) recon error = 6.280370e-16
+N =  610, J =  23: tqwt/itqwt (radix2) recon error = 6.335328e-16
+N =  612, J =  23: tqwt/itqwt (radix2) recon error = 5.236912e-16
+N =  614, J =  23: tqwt/itqwt (radix2) recon error = 6.280370e-16
+N =  616, J =  23: tqwt/itqwt (radix2) recon error = 6.661338e-16
+N =  618, J =  23: tqwt/itqwt (radix2) recon error = 5.795534e-16
+N =  620, J =  23: tqwt/itqwt (radix2) recon error = 6.004449e-16
+
+Q = 1.00, r = 3.00
+N =  128, J =   6: tqwt/itqwt (radix2) recon error = 5.164700e-16
+N =  256, J =   8: tqwt/itqwt (radix2) recon error = 5.273559e-16
+N =  512, J =  10: tqwt/itqwt (radix2) recon error = 6.451306e-16
+N = 1024, J =  11: tqwt/itqwt (radix2) recon error = 7.108896e-16
+N =  600, J =  10: tqwt/itqwt (radix2) recon error = 7.021667e-16
+N =  602, J =  10: tqwt/itqwt (radix2) recon error = 6.753223e-16
+N =  604, J =  10: tqwt/itqwt (radix2) recon error = 7.216450e-16
+N =  606, J =  10: tqwt/itqwt (radix2) recon error = 5.661049e-16
+N =  608, J =  10: tqwt/itqwt (radix2) recon error = 6.280370e-16
+N =  610, J =  10: tqwt/itqwt (radix2) recon error = 5.836926e-16
+N =  612, J =  10: tqwt/itqwt (radix2) recon error = 7.850462e-16
+N =  614, J =  10: tqwt/itqwt (radix2) recon error = 5.978734e-16
+N =  616, J =  10: tqwt/itqwt (radix2) recon error = 7.021667e-16
+N =  618, J =  10: tqwt/itqwt (radix2) recon error = 7.447602e-16
+N =  620, J =  10: tqwt/itqwt (radix2) recon error = 8.671119e-16
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.8<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Radix-2 Tunable Q-factor Wavelet Transform: Verify PR
+% Verify perfect reconstruction (PR) property of radix-2 TQWT
+
+% Reference: 'Wavelet Transform with Tunable Q-Factor'
+% http://taco.poly.edu/selesi/TQWT/
+% Ivan Selesnick,  selesi@poly.edu
+% Polytechnic Institute of NYU
+% November 2010
+
+clear
+
+for k = 1:2
+
+    if k == 1
+        Q = 4; r = 3; J = 10;   % High Q-factor wavelet transform
+    elseif k == 2
+        Q = 1; r = 3; J = 5;    % Low Q-factor wavelet transform
+    end
+
+    fprintf('\n')
+    fprintf('Q = %3.2f, r = %3.2f\n',Q,r)
+    
+    beta = 2/(Q+1);
+    alpha = 1-beta/r;
+    I = sqrt(-1);
+
+    % Verify PR
+    for N = 2.^(7:10)                   % Verify PR for various lengths
+        x = rand(1,N) + I*rand(1,N);    % Make test signal (complex-valued)
+        J = floor(log2(beta*N/8)/log2(1/alpha));    % number of levels
+        w = tqwt_radix2(x,Q,r,J);       % TQWT
+        y = itqwt_radix2(w,Q,r,N);      % Inverse TQWT
+        recon_err = max(abs(x - y));    % Reconstruction error
+
+        fprintf('N = %4d, J = %3d: tqwt/itqwt (radix2) recon error = %e\n',N,J,recon_err)
+    end
+
+    for N = 600:2:620                   % Verify PR for various lengths
+        x = rand(1,N) + I*rand(1,N);    % Make test signal (complex-valued)
+        J = floor(log2(beta*N/8)/log2(1/alpha));    % number of levels
+        w = tqwt_radix2(x,Q,r,J);       % TQWT
+        y = itqwt_radix2(w,Q,r,N);      % Inverse TQWT
+        recon_err = max(abs(x - y));    % Reconstruction error
+
+        fprintf('N = %4d, J = %3d: tqwt/itqwt (radix2) recon error = %e\n',N,J,recon_err)
+    end
+
+
+end
+
+
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

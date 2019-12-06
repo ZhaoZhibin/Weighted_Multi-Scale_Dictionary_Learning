@@ -1,0 +1,187 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Tunable Q-factor Wavelet Transform: Verify PR</title>
+      <meta name="generator" content="MATLAB 7.8">
+      <meta name="date" content="2011-04-05">
+      <meta name="m-file" content="test_PR"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Tunable Q-factor Wavelet Transform: Verify PR</h1>
+         <p>Verify perfect reconstruction (PR) property of TQWT</p><pre class="codeinput"><span class="comment">% Reference: 'Wavelet Transform with Tunable Q-Factor'</span>
+<span class="comment">% http://taco.poly.edu/selesi/TQWT/</span>
+<span class="comment">% Ivan Selesnick,  selesi@poly.edu</span>
+<span class="comment">% Polytechnic Institute of NYU</span>
+<span class="comment">% November 2010</span>
+
+clear
+
+<span class="keyword">for</span> k = 1:2
+
+    <span class="keyword">if</span> k == 1
+        Q = 4; r = 3; J = 10;   <span class="comment">% High Q-factor wavelet transform</span>
+    <span class="keyword">elseif</span> k == 2
+        Q = 1; r = 3; J = 5;    <span class="comment">% Low Q-factor wavelet transform</span>
+    <span class="keyword">end</span>
+
+    fprintf(<span class="string">'\n'</span>)
+    fprintf(<span class="string">'Q = %3.2f, r = %3.2f\n'</span>,Q,r)
+
+    beta = 2/(Q+1);
+    alpha = 1-beta/r;
+    I = sqrt(-1);
+
+    <span class="comment">% Verify PR</span>
+    <span class="keyword">for</span> N = 400:2:420                   <span class="comment">% Verify PR for various lengths</span>
+        x = rand(1,N) + I*rand(1,N);    <span class="comment">% Make test signal (complex-valued)</span>
+        J = floor(log2(beta*N/8)/log2(1/alpha));    <span class="comment">% number of levels</span>
+        w = tqwt(x,Q,r,J);              <span class="comment">% TQWT</span>
+        y = itqwt(w,Q,r,N);             <span class="comment">% Inverse TQWT</span>
+        recon_err = max(abs(x - y));    <span class="comment">% Reconstruction error</span>
+
+        <span class="comment">% print reconstruction error:</span>
+        fprintf(<span class="string">'N = %4d, J = %3d: tqwt/itqwt recon error = %e\n'</span>,N,J,recon_err)
+    <span class="keyword">end</span>
+
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">
+Q = 4.00, r = 3.00
+N =  400, J =  20: tqwt/itqwt recon error = 5.661049e-16
+N =  402, J =  20: tqwt/itqwt recon error = 1.439118e-15
+N =  404, J =  21: tqwt/itqwt recon error = 1.522577e-15
+N =  406, J =  21: tqwt/itqwt recon error = 7.850462e-16
+N =  408, J =  21: tqwt/itqwt recon error = 9.420555e-16
+N =  410, J =  21: tqwt/itqwt recon error = 8.455207e-16
+N =  412, J =  21: tqwt/itqwt recon error = 1.391105e-15
+N =  414, J =  21: tqwt/itqwt recon error = 8.326673e-16
+N =  416, J =  21: tqwt/itqwt recon error = 7.550333e-16
+N =  418, J =  21: tqwt/itqwt recon error = 7.850462e-16
+N =  420, J =  21: tqwt/itqwt recon error = 8.005932e-16
+
+Q = 1.00, r = 3.00
+N =  400, J =   9: tqwt/itqwt recon error = 8.881784e-16
+N =  402, J =   9: tqwt/itqwt recon error = 1.665335e-15
+N =  404, J =   9: tqwt/itqwt recon error = 1.531343e-15
+N =  406, J =   9: tqwt/itqwt recon error = 9.036561e-16
+N =  408, J =   9: tqwt/itqwt recon error = 7.850462e-16
+N =  410, J =   9: tqwt/itqwt recon error = 7.499144e-16
+N =  412, J =   9: tqwt/itqwt recon error = 1.341488e-15
+N =  414, J =   9: tqwt/itqwt recon error = 6.938894e-16
+N =  416, J =   9: tqwt/itqwt recon error = 8.920730e-16
+N =  418, J =   9: tqwt/itqwt recon error = 9.155134e-16
+N =  420, J =   9: tqwt/itqwt recon error = 6.776000e-16
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.8<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Tunable Q-factor Wavelet Transform: Verify PR
+% Verify perfect reconstruction (PR) property of TQWT
+
+% Reference: 'Wavelet Transform with Tunable Q-Factor'
+% http://taco.poly.edu/selesi/TQWT/
+% Ivan Selesnick,  selesi@poly.edu
+% Polytechnic Institute of NYU
+% November 2010
+
+clear
+
+for k = 1:2
+    
+    if k == 1
+        Q = 4; r = 3; J = 10;   % High Q-factor wavelet transform
+    elseif k == 2
+        Q = 1; r = 3; J = 5;    % Low Q-factor wavelet transform
+    end
+    
+    fprintf('\n')
+    fprintf('Q = %3.2f, r = %3.2f\n',Q,r)
+        
+    beta = 2/(Q+1);
+    alpha = 1-beta/r;    
+    I = sqrt(-1);
+
+    % Verify PR
+    for N = 400:2:420                   % Verify PR for various lengths
+        x = rand(1,N) + I*rand(1,N);    % Make test signal (complex-valued)
+        J = floor(log2(beta*N/8)/log2(1/alpha));    % number of levels
+        w = tqwt(x,Q,r,J);              % TQWT
+        y = itqwt(w,Q,r,N);             % Inverse TQWT
+        recon_err = max(abs(x - y));    % Reconstruction error
+        
+        % print reconstruction error:
+        fprintf('N = %4d, J = %3d: tqwt/itqwt recon error = %e\n',N,J,recon_err)
+    end
+    
+end
+
+
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

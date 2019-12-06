@@ -1,0 +1,668 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Sparse representation with the TQWT</title>
+      <meta name="generator" content="MATLAB 7.8">
+      <meta name="date" content="2011-06-30">
+      <meta name="m-file" content="sparsity_demo"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Sparse representation with the TQWT</h1>
+         <!--introduction-->
+         <p>Example illustrating sparse signal representation/approximation using the tunable Q-factor wavelet transform (TQWT). The first
+            part: sparse signal representation (basis pursuit). The second part: sparse signal approximation (basis pursuit densoising).
+         </p>
+         <p>Reference: 'Wavelet Transform with Tunable Q-Factor' <a href="http://taco.poly.edu/selesi/TQWT/">http://taco.poly.edu/selesi/TQWT/</a> Ivan Selesnick,  <a href="mailto:selesi@poly.edu">selesi@poly.edu</a> Polytechnic Institute of NYU November 2010
+         </p>
+         <!--/introduction-->
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">Miscellaneous</a></li>
+               <li><a href="#2">Set example parameters</a></li>
+               <li><a href="#3">Display signal</a></li>
+               <li><a href="#4">Plot wavelets for several scales</a></li>
+               <li><a href="#5">Plot wavelet at final level and low-pass scaling function</a></li>
+               <li><a href="#6">Plot subbands</a></li>
+               <li><a href="#7">Compute energy in each subband</a></li>
+               <li><a href="#8">Sparse wavelet representation (Basis Pursuit)</a></li>
+               <li><a href="#9">Compute cost function</a></li>
+               <li><a href="#10">Display cost function versus iteration</a></li>
+               <li><a href="#11">Plot sparse subbands</a></li>
+               <li><a href="#12">Reconstruction error</a></li>
+               <li><a href="#13">Compute energy in each subband</a></li>
+               <li><a href="#14">Sparse wavelet approximation (Basis Pursuit Denoising)</a></li>
+               <li><a href="#15">Compute cost function</a></li>
+               <li><a href="#16">Display cost function versus</a></li>
+               <li><a href="#17">Display test signal before and after denoising</a></li>
+               <li><a href="#18">Plot sparse subbands</a></li>
+               <li><a href="#19">Residual</a></li>
+               <li><a href="#20">Write information to file</a></li>
+            </ul>
+         </div>
+         <h2>Miscellaneous<a name="1"></a></h2><pre class="codeinput">clear
+close <span class="string">all</span>
+</pre><h2>Set example parameters<a name="2"></a></h2><pre class="codeinput"><span class="comment">% Uncomment one of the following lines</span>
+Example_Num = 1;              <span class="comment">% Artificial signal</span>
+<span class="comment">% Example_Num = 2;                % Speech waveform</span>
+
+<span class="keyword">switch</span> Example_Num
+    <span class="keyword">case</span> 1
+
+        <span class="comment">% Set wavelet parameters</span>
+        Q = 3.5;
+        r = 3.0;
+        L = 20;                 <span class="comment">% number of levels</span>
+        L1 = 6;
+
+        x = test_signal(2);     <span class="comment">% Make test signal</span>
+        N = length(x);
+        t = (0:N-1);            <span class="comment">% time axis</span>
+        fs = 1;                 <span class="comment">% sampling frequency</span>
+        xlabel_txt = <span class="string">'TIME (SAMPLES)'</span>;
+        A = 2;
+
+        printme = @(str) print(<span class="string">'-dpdf'</span>,sprintf(<span class="string">'figures/sparsity_demo1_%s'</span>,str));
+
+    <span class="keyword">case</span> 2
+
+        <span class="comment">% Set wavelet parameters</span>
+        Q = 3;
+        r = 3;
+        L = 23;
+        L1 = 10;
+
+        <span class="comment">% Load speech signal</span>
+        x = load(<span class="string">'speech2.txt'</span>);
+        fs = 16000;
+        x = x(:)';
+        N = 2^11;               <span class="comment">% length(x)</span>
+        t = (0:N-1)/fs;         <span class="comment">% time axis</span>
+        xlabel_txt = <span class="string">'TIME (SECONDS)'</span>;
+        A = 0.5;
+
+        printme = @(str) print(<span class="string">'-dpdf'</span>,sprintf(<span class="string">'figures/sparsity_demo2_%s'</span>,str));
+
+<span class="keyword">end</span>
+
+beta = 2/(Q+1);
+alpha = 1-beta/r;
+</pre><h2>Display signal<a name="3"></a></h2><pre class="codeinput">figure(1), clf
+subplot(2,1,1)
+plot(t,x)
+title(<span class="string">'TEST SIGNAL'</span>)
+box <span class="string">off</span>
+ylim([-A A])
+xlim([t(1) t(end)])
+xlabel(xlabel_txt)
+
+<span class="comment">% Verify perfect reconstruction</span>
+
+w = tqwt_radix2(x, Q, r, L);
+y = itqwt_radix2(w, Q, r, N);
+
+fprintf(<span class="string">'Reconstruction error = %4.3e\n'</span>, max(abs(y-x)))
+</pre><pre class="codeoutput">Reconstruction error = 5.734e-16
+</pre><img vspace="5" hspace="5" src="sparsity_demo_01.png" alt=""> <h2>Plot wavelets for several scales<a name="4"></a></h2>
+         <p>Verify that the wavelets look as expected</p><pre class="codeinput">figure(2), clf
+N1 = 200;                            <span class="comment">% Length of signal</span>
+PlotWavelets(N1,Q,r,4,12);
+xlabel(<span class="string">'TIME (SAMPLES)'</span>)
+orient <span class="string">tall</span>
+printme(<span class="string">'wavelets'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_02.png" alt=""> <h2>Plot wavelet at final level and low-pass scaling function<a name="5"></a></h2><pre class="codeinput">wlets = ComputeWavelets(N,Q,r,L,<span class="string">'radix2'</span>);      <span class="comment">% Compute wavelets</span>
+
+figure(3), clf
+subplot(2,1,1)
+plot(t, wlets{L})
+title(sprintf(<span class="string">'WAVELET AT LEVEL %d'</span>,L))
+xlim([0 N/fs])
+ylim(1.2*(max(abs(wlets{L})))*[-1 1])
+box <span class="string">off</span>
+subplot(2,1,2)
+plot(t, wlets{L+1})
+title(sprintf(<span class="string">'LOW-PASS SCALING FUNCTION AT LEVEL %d'</span>,L))
+xlim([0 N/fs])
+box <span class="string">off</span>
+xlabel(xlabel_txt)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_03.png" alt=""> <h2>Plot subbands<a name="6"></a></h2><pre class="codeinput">figure(4), clf
+<span class="comment">% PlotSubbands(x,w,Q,r,L1,L,fs,[],'stem');</span>
+PlotSubbands(x,w,Q,r,L1,L,fs,<span class="string">'E'</span>,<span class="string">'stem'</span>);
+title(<span class="string">'SUBBANDS'</span>)
+orient <span class="string">tall</span>
+printme(<span class="string">'subbands'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_04.png" alt=""> <h2>Compute energy in each subband<a name="7"></a></h2>
+         <p>It can be useful to know how the energy of a signal is distributed across the subbands. We compute the energy in each subband
+            and display using a bar graph. Because the transform has the Parseval property the distribution of the energy across the subbands
+            reflects the frequency content of the signal.
+         </p><pre class="codeinput">figure(5)
+clf
+subplot(3,1,1:2)
+e = PlotEnergy(w);
+printme(<span class="string">'energy'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_05.png" alt=""> <h2>Sparse wavelet representation (Basis Pursuit)<a name="8"></a></h2>
+         <p>Sparse signal representation with perfect reconstruction (Basis Pursuit). Use a variant of SALSA to minimize l1-norm of wavelet
+            coefficients providing exact reconstruction.
+         </p><pre class="codeinput">now = ComputeNow(N,Q,r,L,<span class="string">'radix2'</span>);
+
+lambda = now;       <span class="comment">% Regularization parameters</span>
+mu = 2.0;           <span class="comment">% SALSA parameter</span>
+Nit = 100;          <span class="comment">% Number of iterations</span>
+
+[w2, costfn] = tqwt_bp(x, Q, r, L, lambda, mu, Nit);
+y = itqwt_radix2(w2, Q, r, N);
+
+err = x - y;
+
+rel_err = sqrt(mean(abs(err).^2))/sqrt(mean(abs(x).^2));
+
+fprintf(<span class="string">'Basis pursuit (BP) relative RMS reconstruction error = %4.3e\n'</span>,rel_err);
+</pre><pre class="codeoutput">Basis pursuit (BP) relative RMS reconstruction error = 3.120e-16
+</pre><h2>Compute cost function<a name="9"></a></h2><pre class="codeinput">cost = 0;
+<span class="keyword">for</span> j = 1:L+1
+    cost = cost + lambda(j)*sum(abs(w2{j}));
+<span class="keyword">end</span>
+
+fprintf(<span class="string">'BP objective function: %e\n'</span>, cost);
+</pre><pre class="codeoutput">BP objective function: 2.221250e+01
+</pre><h2>Display cost function versus iteration<a name="10"></a></h2><pre class="codeinput">figure(6), clf
+it1 = 10;
+plot(it1:Nit, costfn(it1:Nit));
+xlim([0 Nit])
+title(<span class="string">'SALSA COST FUNCTION (BASIS PURSUIT)'</span>)
+xlabel(<span class="string">'ITERATION'</span>)
+box <span class="string">off</span>
+printme(<span class="string">'cost_function_bp'</span>)
+
+<span class="comment">% check consistency between 'cost' and final value of 'costfn'</span>
+fprintf(<span class="string">'BP costfn(end) = %d\n'</span>, costfn(end))
+</pre><pre class="codeoutput">BP costfn(end) = 2.221250e+01
+</pre><img vspace="5" hspace="5" src="sparsity_demo_06.png" alt=""> <h2>Plot sparse subbands<a name="11"></a></h2><pre class="codeinput">figure(7), clf
+PlotSubbands(y,w2,Q,r,L1,L,fs,<span class="string">'E'</span>,<span class="string">'stem'</span>);
+title(<span class="string">'SPARSE SUBBANDS (BASIS PURSUIT)'</span>)
+orient <span class="string">tall</span>
+printme(<span class="string">'subbands_sparse_bp'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_07.png" alt=""> <h2>Reconstruction error<a name="12"></a></h2>
+         <p>The reconstruction error is zero, which verifies that the sparse wavelet coefficients are a valid representation of the signal.</p><pre class="codeinput">figure(8), clf
+subplot(2,1,1)
+plot(t, x)
+xlim([t(1) t(end)])
+ylim([-A A])
+box <span class="string">off</span>
+title(<span class="string">'TEST SIGNAL'</span>)
+
+subplot(2,1,2)
+plot(t, x-y)
+xlim([t(1) t(end)])
+box <span class="string">off</span>
+title(<span class="string">'RECONSTRUCTION ERROR (BASIS PURSUIT)'</span>)
+xlabel(xlabel_txt)
+
+printme(<span class="string">'recon_error_bp'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_08.png" alt=""> <h2>Compute energy in each subband<a name="13"></a></h2><pre class="codeinput">figure(9)
+clf
+subplot(3,1,1:2)
+e2 = PlotEnergy(w2);
+title(<span class="string">'DISTRIBUTION OF SIGNAL ENERGY (BASIS PURSUIT)'</span>)
+printme(<span class="string">'energy_bp'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_09.png" alt=""> <h2>Sparse wavelet approximation (Basis Pursuit Denoising)<a name="14"></a></h2>
+         <p>Sparse signal representation with l1-norm regularization (Basis Pursuit Denoising). Use SALSA to minimize function: sum((x-invTQWT(w)).^2)
+            + sum(abs((lambda.*w))). This is useful when the signal is noisy.
+         </p><pre class="codeinput">lambda = 0.5*now;           <span class="comment">% Regularizaton parameter</span>
+mu = 0.10;                  <span class="comment">% SALSA parameter</span>
+Nit = 100;                  <span class="comment">% Number of iterations</span>
+
+x2 = x + 0.1*randn(1,N);    <span class="comment">% Noisy signal</span>
+
+[wy, costfn] = tqwt_bpd(x2, Q, r, L, lambda, mu, Nit);
+y = itqwt_radix2(wy, Q, r, N);
+</pre><h2>Compute cost function<a name="15"></a></h2><pre class="codeinput">cost = sum(abs(x2 - y).^2);
+<span class="keyword">for</span> j = 1:L+1
+    cost = cost + lambda(j)*sum(abs(wy{j}));
+<span class="keyword">end</span>
+
+fprintf(<span class="string">'BPD objective function: %e\n'</span>, cost);
+</pre><pre class="codeoutput">BPD objective function: 1.507783e+01
+</pre><h2>Display cost function versus<a name="16"></a></h2><pre class="codeinput">figure(11), clf
+it1 = 10;
+plot(it1:Nit, costfn(it1:Nit));
+xlim([0 Nit])
+title(<span class="string">'SALSA COST FUNCTION (BASIS PURSUIT DENOISING)'</span>)
+xlabel(<span class="string">'ITERATION'</span>)
+box <span class="string">off</span>
+printme(<span class="string">'cost_function_bpd'</span>)
+
+<span class="comment">% check consistency between 'cost' and final value of 'costfn'</span>
+fprintf(<span class="string">'BPD costfn(end) = %d\n'</span>, costfn(end))
+</pre><pre class="codeoutput">BPD costfn(end) = 1.507783e+01
+</pre><img vspace="5" hspace="5" src="sparsity_demo_10.png" alt=""> <h2>Display test signal before and after denoising<a name="17"></a></h2><pre class="codeinput">figure(20), clf
+subplot(2,1,1)
+plot(t, x2)
+xlim([t(1) t(end)])
+ylim([-A A])
+box <span class="string">off</span>
+title(<span class="string">'NOISY TEST SIGNAL'</span>)
+xlabel(xlabel_txt)
+
+subplot(2,1,2)
+plot(t, y)
+xlim([t(1) t(end)])
+ylim([-A A])
+box <span class="string">off</span>
+title(<span class="string">'AFTER BASIS PURSUIT DENOISING'</span>)
+xlabel(xlabel_txt)
+
+printme(<span class="string">'signals_bpd'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_11.png" alt=""> <h2>Plot sparse subbands<a name="18"></a></h2><pre class="codeinput">figure(10), clf
+PlotSubbands(y,wy,Q,r,L1,L,fs,<span class="string">'E'</span>,<span class="string">'stem'</span>);
+title(<span class="string">'SPARSE SUBBANDS (BASIS PURSUIT DENOISING)'</span>)
+orient <span class="string">tall</span>
+printme(<span class="string">'subbands_sparse_bpd'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_12.png" alt=""> <h2>Residual<a name="19"></a></h2>
+         <p>The residual is an estimate of the noise - it should look like pure noise</p><pre class="codeinput">figure(11), clf
+subplot(2,1,1)
+plot(t, x2-y)
+xlim([t(1) t(end)])
+box <span class="string">off</span>
+<span class="comment">% ylim([-A A]*0.1)</span>
+title(<span class="string">'RESIDUAL (BASIS PURSUIT DENOISING)'</span>)
+xlabel(xlabel_txt)
+
+printme(<span class="string">'residual_bpd'</span>)
+</pre><img vspace="5" hspace="5" src="sparsity_demo_13.png" alt=""> <h2>Write information to file<a name="20"></a></h2><pre class="codeinput">file_name = sprintf(<span class="string">'figures/sparsity_demo%d_info.txt'</span>,Example_Num);
+fid = fopen(file_name,<span class="string">'w'</span>);
+fprintf(fid,<span class="string">'TRANSFORM PARAMETERS:\n'</span>);
+fprintf(fid,<span class="string">'\t Transform: tqwt_radix2.m\n'</span>);
+fprintf(fid,<span class="string">'\t Q = %4.2f\n\t r = %4.2f\n\t levels = %d\n\n'</span>,Q,r,L);
+fprintf(fid,<span class="string">'SALSA PARAMETERS: \n'</span>);
+fprintf(fid,<span class="string">'\t mu = %.2e\n\t iterations = %d\n'</span>, mu, Nit);
+fclose(fid);
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.8<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Sparse representation with the TQWT
+% Example illustrating sparse signal representation/approximation
+% using the tunable Q-factor wavelet transform (TQWT).
+% The first part: sparse signal representation (basis pursuit).
+% The second part: sparse signal approximation (basis pursuit densoising).
+%
+% Reference: 'Wavelet Transform with Tunable Q-Factor'
+% http://taco.poly.edu/selesi/TQWT/
+% Ivan Selesnick,  selesi@poly.edu
+% Polytechnic Institute of NYU
+% November 2010
+
+%% Miscellaneous
+
+clear
+close all
+
+%% Set example parameters
+
+% Uncomment one of the following lines
+Example_Num = 1;              % Artificial signal
+% Example_Num = 2;                % Speech waveform
+
+switch Example_Num
+    case 1
+        
+        % Set wavelet parameters
+        Q = 3.5;
+        r = 3.0;
+        L = 20;                 % number of levels
+        L1 = 6;
+        
+        x = test_signal(2);     % Make test signal
+        N = length(x);
+        t = (0:N-1);            % time axis
+        fs = 1;                 % sampling frequency
+        xlabel_txt = 'TIME (SAMPLES)';
+        A = 2;
+
+        printme = @(str) print('-dpdf',sprintf('figures/sparsity_demo1_%s',str));
+        
+    case 2
+        
+        % Set wavelet parameters
+        Q = 3;
+        r = 3;
+        L = 23;
+        L1 = 10;
+        
+        % Load speech signal
+        x = load('speech2.txt');
+        fs = 16000;        
+        x = x(:)';
+        N = 2^11;               % length(x)
+        t = (0:N-1)/fs;         % time axis
+        xlabel_txt = 'TIME (SECONDS)';
+        A = 0.5;
+
+        printme = @(str) print('-dpdf',sprintf('figures/sparsity_demo2_%s',str));
+
+end
+
+beta = 2/(Q+1);
+alpha = 1-beta/r;
+
+
+%% Display signal
+
+figure(1), clf
+subplot(2,1,1)
+plot(t,x)
+title('TEST SIGNAL')
+box off
+ylim([-A A])
+xlim([t(1) t(end)])
+xlabel(xlabel_txt)
+
+% Verify perfect reconstruction
+
+w = tqwt_radix2(x, Q, r, L);
+y = itqwt_radix2(w, Q, r, N);
+
+fprintf('Reconstruction error = %4.3e\n', max(abs(y-x)))
+
+
+%% Plot wavelets for several scales
+% Verify that the wavelets look as expected
+
+figure(2), clf
+N1 = 200;                            % Length of signal
+PlotWavelets(N1,Q,r,4,12);
+xlabel('TIME (SAMPLES)')
+orient tall
+printme('wavelets')
+
+
+%% Plot wavelet at final level and low-pass scaling function
+
+wlets = ComputeWavelets(N,Q,r,L,'radix2');      % Compute wavelets
+
+figure(3), clf
+subplot(2,1,1)
+plot(t, wlets{L})
+title(sprintf('WAVELET AT LEVEL %d',L))
+xlim([0 N/fs])
+ylim(1.2*(max(abs(wlets{L})))*[-1 1])
+box off
+subplot(2,1,2)
+plot(t, wlets{L+1})
+title(sprintf('LOW-PASS SCALING FUNCTION AT LEVEL %d',L))
+xlim([0 N/fs])
+box off
+xlabel(xlabel_txt)
+
+
+%% Plot subbands
+
+figure(4), clf
+% PlotSubbands(x,w,Q,r,L1,L,fs,[],'stem');
+PlotSubbands(x,w,Q,r,L1,L,fs,'E','stem');
+title('SUBBANDS')
+orient tall
+printme('subbands')
+
+
+%% Compute energy in each subband
+% It can be useful to know how the energy of a signal is distributed
+% across the subbands. We compute the energy in each subband and display
+% using a bar graph. Because the transform has the Parseval property the
+% distribution of the energy across the subbands reflects the frequency
+% content of the signal.
+
+figure(5)
+clf
+subplot(3,1,1:2)
+e = PlotEnergy(w);
+printme('energy')
+
+
+%% Sparse wavelet representation (Basis Pursuit)
+% Sparse signal representation with perfect reconstruction (Basis Pursuit).
+% Use a variant of SALSA to minimize l1-norm of wavelet coefficients
+% providing exact reconstruction.
+
+now = ComputeNow(N,Q,r,L,'radix2');
+
+lambda = now;       % Regularization parameters
+mu = 2.0;           % SALSA parameter
+Nit = 100;          % Number of iterations
+
+[w2, costfn] = tqwt_bp(x, Q, r, L, lambda, mu, Nit);
+y = itqwt_radix2(w2, Q, r, N);
+
+err = x - y;
+
+rel_err = sqrt(mean(abs(err).^2))/sqrt(mean(abs(x).^2));
+
+fprintf('Basis pursuit (BP) relative RMS reconstruction error = %4.3e\n',rel_err);
+
+%% Compute cost function
+
+cost = 0;
+for j = 1:L+1
+    cost = cost + lambda(j)*sum(abs(w2{j}));
+end
+
+fprintf('BP objective function: %e\n', cost);
+
+%% Display cost function versus iteration
+
+figure(6), clf
+it1 = 10;
+plot(it1:Nit, costfn(it1:Nit));
+xlim([0 Nit])
+title('SALSA COST FUNCTION (BASIS PURSUIT)')
+xlabel('ITERATION')
+box off
+printme('cost_function_bp')
+
+% check consistency between 'cost' and final value of 'costfn'
+fprintf('BP costfn(end) = %d\n', costfn(end))
+
+
+%% Plot sparse subbands
+
+figure(7), clf
+PlotSubbands(y,w2,Q,r,L1,L,fs,'E','stem');
+title('SPARSE SUBBANDS (BASIS PURSUIT)')
+orient tall
+printme('subbands_sparse_bp')
+
+%% Reconstruction error
+% The reconstruction error is zero, which verifies that 
+% the sparse wavelet coefficients are a valid representation of the
+% signal.
+
+figure(8), clf
+subplot(2,1,1)
+plot(t, x)
+xlim([t(1) t(end)])
+ylim([-A A])
+box off
+title('TEST SIGNAL')
+
+subplot(2,1,2)
+plot(t, x-y)
+xlim([t(1) t(end)])
+box off
+title('RECONSTRUCTION ERROR (BASIS PURSUIT)')
+xlabel(xlabel_txt)
+
+printme('recon_error_bp')
+
+%% Compute energy in each subband
+
+figure(9)
+clf
+subplot(3,1,1:2)
+e2 = PlotEnergy(w2);
+title('DISTRIBUTION OF SIGNAL ENERGY (BASIS PURSUIT)')
+printme('energy_bp')
+
+
+
+%% Sparse wavelet approximation (Basis Pursuit Denoising)
+% Sparse signal representation with l1-norm regularization (Basis Pursuit Denoising).
+% Use SALSA to minimize function: sum((x-invTQWT(w)).^2) + sum(abs((lambda.*w))).
+% This is useful when the signal is noisy.
+
+lambda = 0.5*now;           % Regularizaton parameter
+mu = 0.10;                  % SALSA parameter
+Nit = 100;                  % Number of iterations
+
+x2 = x + 0.1*randn(1,N);    % Noisy signal
+
+[wy, costfn] = tqwt_bpd(x2, Q, r, L, lambda, mu, Nit);
+y = itqwt_radix2(wy, Q, r, N);
+
+
+%% Compute cost function
+
+cost = sum(abs(x2 - y).^2);
+for j = 1:L+1
+    cost = cost + lambda(j)*sum(abs(wy{j}));
+end
+
+fprintf('BPD objective function: %e\n', cost);
+
+%% Display cost function versus
+
+figure(11), clf
+it1 = 10;
+plot(it1:Nit, costfn(it1:Nit));
+xlim([0 Nit])
+title('SALSA COST FUNCTION (BASIS PURSUIT DENOISING)')
+xlabel('ITERATION')
+box off
+printme('cost_function_bpd')
+
+% check consistency between 'cost' and final value of 'costfn'
+fprintf('BPD costfn(end) = %d\n', costfn(end))
+
+%% Display test signal before and after denoising
+
+figure(20), clf
+subplot(2,1,1)
+plot(t, x2)
+xlim([t(1) t(end)])
+ylim([-A A])
+box off
+title('NOISY TEST SIGNAL')
+xlabel(xlabel_txt)
+
+subplot(2,1,2)
+plot(t, y)
+xlim([t(1) t(end)])
+ylim([-A A])
+box off
+title('AFTER BASIS PURSUIT DENOISING')
+xlabel(xlabel_txt)
+
+printme('signals_bpd')
+
+%% Plot sparse subbands
+
+figure(10), clf
+PlotSubbands(y,wy,Q,r,L1,L,fs,'E','stem');
+title('SPARSE SUBBANDS (BASIS PURSUIT DENOISING)')
+orient tall
+printme('subbands_sparse_bpd')
+
+%% Residual
+% The residual is an estimate of the noise - it should look like pure noise
+
+figure(11), clf
+subplot(2,1,1)
+plot(t, x2-y)
+xlim([t(1) t(end)])
+box off
+% ylim([-A A]*0.1)
+title('RESIDUAL (BASIS PURSUIT DENOISING)')
+xlabel(xlabel_txt)
+
+printme('residual_bpd')
+
+%% Write information to file
+
+file_name = sprintf('figures/sparsity_demo%d_info.txt',Example_Num);
+fid = fopen(file_name,'w');
+fprintf(fid,'TRANSFORM PARAMETERS:\n');
+fprintf(fid,'\t Transform: tqwt_radix2.m\n');
+fprintf(fid,'\t Q = %4.2f\n\t r = %4.2f\n\t levels = %d\n\n',Q,r,L);
+fprintf(fid,'SALSA PARAMETERS: \n');
+fprintf(fid,'\t mu = %.2e\n\t iterations = %d\n', mu, Nit);
+fclose(fid);
+
+##### SOURCE END #####
+-->
+   </body>
+</html>
