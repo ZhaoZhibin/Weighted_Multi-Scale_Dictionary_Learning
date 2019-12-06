@@ -51,7 +51,7 @@ open it with matlab
 -  Test Simulation: Check the parameters setting of simulation in `Config.m` and run `Test_simulaton.m`. 
 
 
-## Citing WMSDL
+## Citation
 If you feel our WMSDL is useful for your research, please consider citing our paper: 
 
 ```
@@ -65,5 +65,7 @@ If you feel our WMSDL is useful for your research, please consider citing our pa
   publisher={Elsevier}
 }
 ```
+## Contact
+- zhibinzhao1993@gmail.com
 
 [lic-image]: https://img.shields.io/aur/license/pac.svg
