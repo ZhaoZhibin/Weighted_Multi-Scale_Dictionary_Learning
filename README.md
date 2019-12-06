@@ -1,6 +1,5 @@
 # Weighted_Multi-Scale_Dictionary_Learning
 
-[![lic-image]][lic-url]
 
 This repository contains the implementation details of our paper: [Journal of Sound and Vibration]
 "[**A weighted multi-scale dictionary learning model and its applications on bearing fault diagnosis**](https://www.sciencedirect.com/science/article/abs/pii/S0022460X19300586)" 
@@ -68,4 +67,3 @@ If you feel our WMSDL is useful for your research, please consider citing our pa
 ## Contact
 - zhibinzhao1993@gmail.com
 
-[lic-image]: https://img.shields.io/aur/license/pac.svg
