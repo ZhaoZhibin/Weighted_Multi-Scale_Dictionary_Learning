@@ -28,7 +28,7 @@ Params.H     = [150, 550];        % The discrete frequencies
 Params.noise_type = 'Gaussian';   % The noise type can be 'Gaussian' or 'Laplacian'
 
 
-%% Parameters of the HHLP
+%% Parameters of the WMSDL
 % TQWT parameters
 Params.Q         = 8;            % The Q factor
 Params.r         = 4;            % The redundant factor
